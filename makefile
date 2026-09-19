@@ -38,11 +38,17 @@ endif
 
 UNAME := uname
 UNAME_OS := $(shell $(UNAME) -s | cut -f1 -d_)
-# Translate LIB_DIR for Cygwin/MSYS2 shells so the native Win32 JDK can
-# read it from the classpath.
-ifneq (,$(filter CYGWIN MSYS MINGW32 MINGW64 UCRT64 CLANGARM64,$(UNAME_OS)))
+ifeq ($(findstring CYGWIN,$(UNAME_OS)), CYGWIN)
 	LIB_DIR:=$(shell cygpath -w $(LIB_DIR))
+else ifeq ($(UNAME_OS),OS/390)
+# The issue is still being investigated. See backlog/issues/1424
+# set -Dfile.encoding=IBM-1047 for JDK21+ zOS for now
+ifeq ($(shell test $(JDK_VERSION) -ge 21; echo $$?),0)
+export IBM_JAVA_OPTIONS="-Dfile.encoding=COMPAT"
+$(info export IBM_JAVA_OPTIONS="-Dfile.encoding=COMPAT")
 endif
+endif
+
 
 export LIB_DIR:=$(subst \,/,$(LIB_DIR))
 $(info LIB_DIR is set to $(LIB_DIR))
